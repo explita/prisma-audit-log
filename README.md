@@ -5,10 +5,16 @@ A Prisma extension for automatic audit logging of database operations.
 ## Features
 
 - ✅ Automatic logging of create, update, and delete operations
-- ✅ Support for single and batch operations
+- ✅ Efficient batch processing of logs with automatic fallback to single inserts
+- ✅ Support for both single and batch operations
 - ✅ Tracks changed fields for updates
 - ✅ Context-aware logging with user and request information
 - ✅ Customizable field masking and data sanitization
+- ✅ Field-level filtering to include/exclude specific fields from logs
+- ✅ Ignores updates where only `updatedAt`/`updated_at` changed (noise-free logs)
+- ✅ Skip logging for specific operations using a callback function
+- ✅ Proper handling of Decimal and other special types
+- ✅ Ignores logging of AuditLog model
 - ✅ TypeScript support
 
 ## Installation
@@ -17,6 +23,8 @@ A Prisma extension for automatic audit logging of database operations.
 npm install @explita/prisma-audit-log
 # or
 yarn add @explita/prisma-audit-log
+# or
+pnpm add @explita/prisma-audit-log
 ```
 
 #
@@ -56,6 +64,18 @@ const prisma = new PrismaClient().$extends(
     maskFields: ["password", "token"],
     maskValue: "[REDACTED]", // default value
 
+    // Optional: Configure field inclusion/exclusion per model
+    fieldFilters: {
+      // Exclude sensitive fields from User model
+      User: {
+        exclude: ["password", "tokens", "refreshToken"],
+      },
+      // Only include specific fields for Payment model
+      Payment: {
+        include: ["id", "amount", "status", "createdAt"],
+      },
+    },
+
     // Optional: Truncate long values
     maxStringLength: 1000,
     maxArrayLength: 50,
@@ -64,7 +84,24 @@ const prisma = new PrismaClient().$extends(
     logger: (log) => {
       // Send logs to your logging service
       console.log("AUDIT:", log);
+      // log can be an array of AuditLog objects
     },
+
+    // Skip logging for specific operations
+    skip: ({ model, operation, args }) => {
+      // Skip logging for specific models or operations
+      if (model === "Session" && operation === "create") return true;
+
+      // Skip logging for specific conditions
+      if (model === "User" && args?.data?.isSystemUpdate) return true;
+
+      // Skip logging for specific operations on specific models
+      if (model === "AuditLog" || model === "audit_logs") return true;
+
+      return false;
+    },
+
+    // Timestamp-only updates are skipped automatically, so no extra config needed
   })
 );
 ```
@@ -118,17 +155,19 @@ route.put("/test/:id", async (request, reply) => {
 
 ## Configuration Options
 
-| Option            | Type                 | Description                                            |
-| ----------------- | -------------------- | ------------------------------------------------------ |
-| `includeModels`   | `string[]`           | Only log operations on these models                    |
-| `excludeModels`   | `string[]`           | Exclude these models from logging                      |
-| `getContext`      | `() => AuditContext` | Function to get current context (user, IP, etc.)       |
-| `maskFields`      | `string[]`           | Fields to mask in logs                                 |
-| `maskValue`       | `any`                | Value to use for masked fields (default: `[REDACTED]`) |
-| `maxStringLength` | `number`             | Truncate long strings                                  |
-| `maxArrayLength`  | `number`             | Truncate large arrays                                  |
-| `maxPayloadBytes` | `number`             | Maximum JSON payload size                              |
-| `batchInsert`     | `boolean`            | Use batch inserts (default: `true`)                    |
+| Option            | Type                                                                                       | Description                                                                                                      |
+| ----------------- | ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| `includeModels`   | `string[]`                                                                                 | Only log operations on these models                                                                              |
+| `excludeModels`   | `string[]`                                                                                 | Exclude these models from logging                                                                                |
+| `getContext`      | `() => AuditContext`                                                                       | Function to get current context (user, IP, etc.)                                                                 |
+| `maskFields`      | `string[]`                                                                                 | Fields to mask in logs                                                                                           |
+| `maskValue`       | `any`                                                                                      | Value to use for masked fields (default: `[REDACTED]`)                                                           |
+| `maxStringLength` | `number`                                                                                   | Truncate long strings                                                                                            |
+| `maxArrayLength`  | `number`                                                                                   | Truncate large arrays                                                                                            |
+| `maxPayloadBytes` | `number`                                                                                   | Maximum JSON payload size (before truncation)                                                                    |
+| `fieldFilters`    | `{ [model: string]: { include?: string[]; exclude?: string[] } }`                          | Configure field inclusion/exclusion per model. Use `include` to whitelist fields or `exclude` to blacklist them. |
+| `skip`            | `(params: { model: string; operation: string; args: any }) => boolean \| Promise<boolean>` | Skip logging for specific operations                                                                             |
+| `logger`          | `(log: AuditLog \| AuditLog[]) => void`                                                    | Custom logger function for audit logs                                                                            |
 
 ## License
 

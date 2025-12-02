@@ -1,2 +1,7 @@
-export type { AuditLog, AuditLogOptions } from "./types.js";
+export type {
+  AuditContext,
+  AuditLog,
+  AuditLogOptions,
+  ModelFieldFilters,
+} from "./types.js";
 export { auditLogExtension } from "./lib/prisma-extension.js";

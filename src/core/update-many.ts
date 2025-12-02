@@ -36,6 +36,13 @@ export async function handleUpdateMany(opts: HandlerArgs) {
 
     const changedFields = getChangedFields(current, updated);
 
+    if (
+      changedFields.length === 1 &&
+      (changedFields[0] === "updatedAt" || changedFields[0] === "updated_at")
+    ) {
+      continue;
+    }
+
     const { oldData, newData } = buildSnapshot(changedFields, current, updated);
 
     logs.push({

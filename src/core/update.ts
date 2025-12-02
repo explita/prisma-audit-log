@@ -1,6 +1,6 @@
 import { buildSnapshot, getChangedFields } from "../lib/utils.js";
 import type { AuditLog, HandlerArgs } from "../types.js";
-import { processAuditLog } from "./process.js";
+import { saveAuditLogs } from "./process.js";
 
 export async function handleUpdate(opts: HandlerArgs) {
   const { args, prisma, query, options, modelName } = opts;
@@ -15,6 +15,13 @@ export async function handleUpdate(opts: HandlerArgs) {
   if (current) {
     const changedFields = getChangedFields(current, result);
 
+    if (
+      changedFields.length === 1 &&
+      (changedFields[0] === "updatedAt" || changedFields[0] === "updated_at")
+    ) {
+      return result;
+    }
+
     const { oldData, newData } = buildSnapshot(changedFields, current, result);
 
     const auditLog: Omit<AuditLog, "id"> = {
@@ -26,7 +33,7 @@ export async function handleUpdate(opts: HandlerArgs) {
       changedFields,
     };
 
-    await processAuditLog(prisma, auditLog, options);
+    await saveAuditLogs(prisma, [auditLog], options);
   }
 
   return result;

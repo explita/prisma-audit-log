@@ -14,19 +14,33 @@ import { handleUpdate } from "../core/update.js";
 export function auditLogExtension(options: AuditLogOptions = {}) {
   return Prisma.defineExtension((prisma) => {
     return prisma.$extends({
+      name: "auditLogExtension",
       query: {
         $allModels: {
           async $allOperations({ model, operation, args, query }) {
             const modelName = model?.toString();
+
+            // Never audit the audit log model itself
+            if (["auditLog", "AuditLog"].includes(modelName ?? "")) {
+              return query(args);
+            }
 
             // Skip if model is excluded or not included
             if (shouldSkipModel(modelName, options)) {
               return query(args);
             }
 
-            // Never audit the audit log model itself
-            if (["auditLog", "AuditLog"].includes(modelName ?? "")) {
-              return query(args);
+            // Check if the operation should be skipped via the skip callback
+            if (options.skip) {
+              const shouldSkip = await options.skip({
+                model: modelName,
+                operation,
+                args,
+              });
+
+              if (shouldSkip) {
+                return query(args);
+              }
             }
 
             const queryArgs = {

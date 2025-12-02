@@ -1,5 +1,5 @@
 import type { AuditLog, HandlerArgs } from "../types.js";
-import { processAuditLog } from "./process.js";
+import { saveAuditLogs } from "./process.js";
 
 export async function handleDelete(opts: HandlerArgs) {
   const { args, prisma, query, options, modelName } = opts;
@@ -19,7 +19,7 @@ export async function handleDelete(opts: HandlerArgs) {
       oldData: current,
     };
 
-    await processAuditLog(prisma, auditLog, options);
+    await saveAuditLogs(prisma, [auditLog], options);
   }
 
   return result;

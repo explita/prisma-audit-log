@@ -1,5 +1,5 @@
 import type { AuditLog, HandlerArgs } from "../types.js";
-import { processAuditLog } from "./process.js";
+import { saveAuditLogs } from "./process.js";
 
 export async function handleCreate(opts: HandlerArgs) {
   const { args, prisma, query, options, modelName } = opts;
@@ -13,7 +13,7 @@ export async function handleCreate(opts: HandlerArgs) {
     newData: result,
   };
 
-  await processAuditLog(prisma, auditLog, options);
+  await saveAuditLogs(prisma, [auditLog], options);
 
   return result;
 }
