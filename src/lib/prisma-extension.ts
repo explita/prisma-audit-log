@@ -7,6 +7,7 @@ import type { AuditLogOptions } from "../types.js";
 import { handleDelete } from "../core/delete.js";
 import { handleDeleteMany } from "../core/delete-many.js";
 import { handleUpdate } from "../core/update.js";
+import { handleUpsert } from "../core/upsert.js";
 
 /**
  * Creates a Prisma extension that adds audit logging
@@ -70,6 +71,8 @@ export function auditLogExtension(options: AuditLogOptions = {}) {
               case "updateMany":
               case "updateManyAndReturn":
                 return handleUpdateMany(queryArgs);
+              case "upsert":
+                return handleUpsert(queryArgs);
               default:
                 return query(args);
             }

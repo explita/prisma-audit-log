@@ -21,7 +21,7 @@ export async function handleUpdateMany(opts: HandlerArgs) {
 
   //updated records
   const updatedRecords =
-    operation == "createManyAndReturn"
+    operation == "updateManyAndReturn"
       ? result
       : await prisma[modelName].findMany({
           where: { id: { in: ids } },
@@ -35,6 +35,8 @@ export async function handleUpdateMany(opts: HandlerArgs) {
     if (!updated) continue;
 
     const changedFields = getChangedFields(current, updated);
+
+    if (changedFields.length === 0) continue;
 
     if (
       changedFields.length === 1 &&

@@ -65,7 +65,7 @@ export interface AuditLogOptions {
 
 export interface AuditLog {
   id: string;
-  action: "CREATE" | "UPDATE" | "DELETE";
+  action: "CREATE" | "UPDATE" | "DELETE" | "CREATE_upsert" | "UPDATE_upsert";
   model: string;
   recordId: string;
   oldData?: Record<string, any>;
@@ -93,7 +93,8 @@ export type HandlerArgs = {
   args: JsArgs;
   query: (args: JsArgs) => Promise<any>;
   options: AuditLogOptions;
-  operation?: string;
+  operation: string;
+  existingRecord?: any;
 };
 
 export type FieldFilterConfig = {
