@@ -1,6 +1,6 @@
 {
   "name": "@explita/prisma-audit-log",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "A Prisma extension for automatic audit logging",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -12,11 +12,20 @@
   ],
   "license": "MIT",
   "author": "Explita",
+  "sideEffects": false,
   "scripts": {
     "clean": "rimraf dist",
     "build": "npm run clean && tsc",
     "prepublishOnly": "npm run build"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/explita/prisma-audit-log.git"
+  },
+  "bugs": {
+    "url": "https://github.com/explita/prisma-audit-log/issues"
+  },
+  "homepage": "https://github.com/explita/prisma-audit-log#readme",
   "peerDependencies": {
     "@prisma/client": "^7"
   },

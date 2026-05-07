@@ -2,6 +2,11 @@ import type { JsArgs } from "@prisma/client/runtime/client";
 
 export interface AuditLogOptions {
   /**
+   * Enable or disable audit logging
+   * @default true
+   */
+  enabled?: boolean;
+  /**
    * Function to determine if audit logging should be skipped for the current operation
    * @returns true to skip logging, false or undefined to continue with logging
    */
@@ -43,7 +48,7 @@ export interface AuditLogOptions {
    * Custom logger function
    * If not provided, logs will be written to console
    */
-  logger?: (log: AuditLog | AuditLog[]) => void | Promise<void>;
+  logger?: (log: AuditLog[]) => void | Promise<void>;
 
   /**
    * Keys to mask in oldData/newData/metadata. Exact match on property name.

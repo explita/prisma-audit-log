@@ -102,7 +102,7 @@ const prisma = new PrismaClient().$extends(
     },
 
     // Timestamp-only updates are skipped automatically, so no extra config needed
-  })
+  }),
 );
 ```
 
@@ -164,10 +164,11 @@ route.put("/test/:id", async (request, reply) => {
 | `maskValue`       | `any`                                                                                      | Value to use for masked fields (default: `[REDACTED]`)                                                           |
 | `maxStringLength` | `number`                                                                                   | Truncate long strings                                                                                            |
 | `maxArrayLength`  | `number`                                                                                   | Truncate large arrays                                                                                            |
+| `enabled`         | `boolean`                                                                                  | Enable or disable audit logging (defaults to `true`)                                                              |
 | `maxPayloadBytes` | `number`                                                                                   | Maximum JSON payload size (before truncation)                                                                    |
 | `fieldFilters`    | `{ [model: string]: { include?: string[]; exclude?: string[] } }`                          | Configure field inclusion/exclusion per model. Use `include` to whitelist fields or `exclude` to blacklist them. |
 | `skip`            | `(params: { model: string; operation: string; args: any }) => boolean \| Promise<boolean>` | Skip logging for specific operations                                                                             |
-| `logger`          | `(log: AuditLog \| AuditLog[]) => void`                                                    | Custom logger function for audit logs                                                                            |
+| `logger`          | `(log: AuditLog[]) => void \| Promise<void>`                                               | Custom logger function for audit logs                                                                            |
 
 ## License
 

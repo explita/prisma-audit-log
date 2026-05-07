@@ -12,7 +12,9 @@ import { handleUpsert } from "../core/upsert.js";
 /**
  * Creates a Prisma extension that adds audit logging
  */
-export function auditLogExtension(options: AuditLogOptions = {}) {
+export function auditLogExtension(
+  options: AuditLogOptions = { enabled: true },
+) {
   return Prisma.defineExtension((prisma) => {
     return prisma.$extends({
       name: "auditLogExtension",
@@ -26,8 +28,8 @@ export function auditLogExtension(options: AuditLogOptions = {}) {
               return query(args);
             }
 
-            // Skip if model is excluded or not included
-            if (shouldSkipModel(modelName, options)) {
+            // Skip if model is excluded or not included or disabled
+            if (!options.enabled || shouldSkipModel(modelName, options)) {
               return query(args);
             }
 
