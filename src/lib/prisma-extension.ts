@@ -12,9 +12,8 @@ import { handleUpsert } from "../core/upsert.js";
 /**
  * Creates a Prisma extension that adds audit logging
  */
-export function auditLogExtension(
-  options: AuditLogOptions = { enabled: true },
-) {
+export function auditLogExtension(opts: AuditLogOptions = {}) {
+  const options = { enabled: true, ...opts };
   return Prisma.defineExtension((prisma) => {
     return prisma.$extends({
       name: "auditLogExtension",

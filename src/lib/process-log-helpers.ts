@@ -64,6 +64,10 @@ function maskAndTruncate(
     );
   }
 
+  if (typeof value === "bigint") {
+    return value.toString();
+  }
+
   // Handle Decimal type from Prisma
   if (
     value &&
