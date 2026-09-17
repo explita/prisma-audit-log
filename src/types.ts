@@ -1,4 +1,10 @@
-import type { JsArgs } from "@prisma/client/runtime/client";
+/**
+ * Arguments passed to a Prisma query extension callback.
+ *
+ * This is intentionally defined structurally instead of importing Prisma's
+ * internal `JsArgs` type, whose module path differs between Prisma versions.
+ */
+export type QueryArgs = Record<string, any>;
 
 export interface AuditLogOptions {
   /**
@@ -95,8 +101,8 @@ export interface AuditContext {
 export type HandlerArgs = {
   prisma: any;
   modelName: string;
-  args: JsArgs;
-  query: (args: JsArgs) => Promise<any>;
+  args: QueryArgs;
+  query: (args: QueryArgs) => Promise<any>;
   options: AuditLogOptions;
   operation: string;
   existingRecord?: any;

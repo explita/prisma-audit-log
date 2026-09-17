@@ -27,7 +27,7 @@
   },
   "homepage": "https://github.com/explita/prisma-audit-log#readme",
   "peerDependencies": {
-    "@prisma/client": "^7"
+    "@prisma/client": ">=6 <8"
   },
   "devDependencies": {
     "@types/node": "^24",

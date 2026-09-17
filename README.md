@@ -2,6 +2,8 @@
 
 A Prisma extension for automatic audit logging of database operations.
 
+Supports Prisma 6 and Prisma 7.
+
 ## Features
 
 - ✅ Automatic logging of create, update, and delete operations

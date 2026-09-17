@@ -9,7 +9,7 @@ importers:
   .:
     dependencies:
       '@prisma/client':
-        specifier: ^7
+        specifier: '>=6 <8'
         version: 7.0.1(typescript@5.9.3)
     devDependencies:
       '@types/node':
