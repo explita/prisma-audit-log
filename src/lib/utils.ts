@@ -1,8 +1,8 @@
-import type { AuditLogOptions } from "../types.js";
+import type { AuditLogOptions, ResolvePrismaClientParams } from "../types.js";
 
 export function shouldSkipModel(
   modelName: string | undefined,
-  options: AuditLogOptions
+  options: AuditLogOptions,
 ): boolean {
   if (!modelName) return true;
 
@@ -34,18 +34,61 @@ export function getChangedFields(oldObj: any, newObj: any): string[] {
 export function buildSnapshot(
   changedFields: string[],
   current: any,
-  updated: any
+  updated: any,
 ) {
   // Build partial snapshots containing only changed fields
-  const oldData = changedFields.reduce((acc: any, key: string) => {
-    acc[key] = (current as any)[key];
-    return acc;
-  }, {} as Record<string, any>);
+  const oldData = changedFields.reduce(
+    (acc: any, key: string) => {
+      acc[key] = (current as any)[key];
+      return acc;
+    },
+    {} as Record<string, any>,
+  );
 
-  const newData = changedFields.reduce((acc: any, key: string) => {
-    acc[key] = (updated as any)[key];
-    return acc;
-  }, {} as Record<string, any>);
+  const newData = changedFields.reduce(
+    (acc: any, key: string) => {
+      acc[key] = (updated as any)[key];
+      return acc;
+    },
+    {} as Record<string, any>,
+  );
 
   return { newData, oldData };
+}
+
+export async function resolvePrismaClient({
+  prisma,
+  options,
+  modelName,
+  operation,
+  args,
+  internalParams,
+}: ResolvePrismaClientParams): Promise<any> {
+  let activeClient = prisma;
+
+  if (options.getClient) {
+    const customClient = await options.getClient({
+      model: modelName ?? "",
+      operation,
+      args,
+    });
+    if (customClient) {
+      activeClient = customClient;
+    }
+  } else if (options.autoDetectTransaction) {
+    const internalTx = internalParams?.transaction;
+    if (
+      internalTx &&
+      internalTx.kind === "itx" &&
+      typeof (prisma as any)._createItxClient === "function"
+    ) {
+      try {
+        activeClient = (prisma as any)._createItxClient(internalTx);
+      } catch {
+        activeClient = prisma;
+      }
+    }
+  }
+
+  return activeClient;
 }

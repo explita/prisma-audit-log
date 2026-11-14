@@ -51,6 +51,39 @@ export interface AuditLogOptions {
   getContext?: () => AuditContext | Promise<AuditContext | undefined>;
 
   /**
+   * Function to resolve the active Prisma client (e.g. from AsyncLocalStorage during transactions).
+   * If provided and returns a client, that client is used for pre-reads and audit persistence.
+   */
+  getClient?: (params: {
+    model: string;
+    operation: string;
+    args: any;
+  }) => any | Promise<any>;
+
+  /**
+   * Automatically detect Prisma interactive transactions ($transaction) and bind audit operations
+   * to the active transaction client using Prisma runtime internals.
+   * If getClient is provided and returns a client, it takes precedence.
+   * @default true
+   */
+  autoDetectTransaction?: boolean;
+
+  /**
+   * Whether to rethrow errors that occur during audit logging.
+   * When true, audit persistence failures will throw and cause active transactions to roll back.
+   * When false, audit failures are logged to console.error and swallowed.
+   * @default false
+   */
+  propagateErrors?: boolean;
+
+  /**
+   * Whether to defer calling the custom logger until an interactive transaction commits.
+   * If the transaction rolls back, buffered logs are discarded and the logger is not called.
+   * @default true
+   */
+  deferLoggerUntilCommit?: boolean;
+
+  /**
    * Custom logger function
    * If not provided, logs will be written to console
    */
@@ -106,6 +139,7 @@ export type HandlerArgs = {
   options: AuditLogOptions;
   operation: string;
   existingRecord?: any;
+  internalParams?: any;
 };
 
 export type FieldFilterConfig = {
@@ -120,4 +154,13 @@ export type ModelFieldFilters = {
 export interface FilterFieldsResult<T> {
   filteredData: T | undefined;
   filteredChangedFields?: string[];
+}
+
+export interface ResolvePrismaClientParams {
+  prisma: any;
+  options: AuditLogOptions;
+  modelName?: string;
+  operation: string;
+  args: any;
+  internalParams?: any;
 }

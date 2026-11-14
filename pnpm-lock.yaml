@@ -7,11 +7,10 @@ settings:
 importers:
 
   .:
-    dependencies:
-      '@prisma/client':
-        specifier: '>=6 <8'
-        version: 7.0.1(typescript@5.9.3)
     devDependencies:
+      '@prisma/client':
+        specifier: ^7
+        version: 7.0.1(typescript@5.9.3)
       '@types/node':
         specifier: ^24
         version: 24.10.1

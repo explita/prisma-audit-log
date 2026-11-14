@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client/extension";
-import { shouldSkipModel } from "./utils.js";
+import { resolvePrismaClient, shouldSkipModel } from "./utils.js";
+import { hookEngineTransactions } from "./transaction-logger.js";
 import { handleCreate } from "../core/create.js";
 import { handleCreateMany } from "../core/create-many.js";
 import { handleUpdateMany } from "../core/update-many.js";
@@ -13,13 +14,19 @@ import { handleUpsert } from "../core/upsert.js";
  * Creates a Prisma extension that adds audit logging
  */
 export function auditLogExtension(opts: AuditLogOptions = {}) {
-  const options = { enabled: true, ...opts };
+  const options = {
+    enabled: true,
+    autoDetectTransaction: true,
+    deferLoggerUntilCommit: true,
+    ...opts,
+  };
   return Prisma.defineExtension((prisma) => {
+    hookEngineTransactions(prisma);
     return prisma.$extends({
       name: "auditLogExtension",
       query: {
         $allModels: {
-          async $allOperations({ model, operation, args, query }) {
+          async $allOperations({ model, operation, args, query, ...rest }) {
             const modelName = model?.toString();
 
             // Never audit the audit log model itself
@@ -45,13 +52,26 @@ export function auditLogExtension(opts: AuditLogOptions = {}) {
               }
             }
 
+            const internalParams = (rest as any)?.__internalParams;
+
+            // Resolve client: 1) explicit getClient -> 2) auto-detected itx -> 3) root prisma client
+            const activeClient = await resolvePrismaClient({
+              prisma,
+              options,
+              modelName,
+              operation,
+              args,
+              internalParams,
+            });
+
             const queryArgs = {
               args,
-              prisma,
+              prisma: activeClient,
               query,
               options,
               modelName,
               operation,
+              internalParams,
             };
 
             // Handle different operations

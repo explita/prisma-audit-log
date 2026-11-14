@@ -5,7 +5,7 @@ export async function handleCreate(
   opts: HandlerArgs,
   action: AuditLog["action"] = "CREATE"
 ) {
-  const { args, prisma, query, options, modelName } = opts;
+  const { args, prisma, query, options, modelName, internalParams } = opts;
 
   const result = await query(args);
 
@@ -16,7 +16,7 @@ export async function handleCreate(
     newData: result,
   };
 
-  await saveAuditLogs(prisma, [auditLog], options);
+  await saveAuditLogs(prisma, [auditLog], options, internalParams);
 
   return result;
 }

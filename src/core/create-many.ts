@@ -7,7 +7,8 @@ import { saveAuditLogs } from "./process.js";
  * - createMany: logs best-effort using the input data (uses provided id if present)
  */
 export async function handleCreateMany(opts: HandlerArgs) {
-  const { args, prisma, query, options, modelName, operation } = opts;
+  const { args, prisma, query, options, modelName, operation, internalParams } =
+    opts;
 
   if (operation === "createManyAndReturn") {
     const created = await query(args);
@@ -21,7 +22,7 @@ export async function handleCreateMany(opts: HandlerArgs) {
       newData: row,
     }));
 
-    await saveAuditLogs(prisma, logs, options);
+    await saveAuditLogs(prisma, logs, options, internalParams);
 
     return created;
   }
@@ -48,7 +49,7 @@ export async function handleCreateMany(opts: HandlerArgs) {
     newData: item,
   }));
 
-  await saveAuditLogs(prisma, logs, options);
+  await saveAuditLogs(prisma, logs, options, internalParams);
 
   return result;
 }

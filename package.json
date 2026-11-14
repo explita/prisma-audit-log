@@ -1,6 +1,6 @@
 {
   "name": "@explita/prisma-audit-log",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "description": "A Prisma extension for automatic audit logging",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -30,6 +30,7 @@
     "@prisma/client": ">=6 <8"
   },
   "devDependencies": {
+    "@prisma/client": "^7",
     "@types/node": "^24",
     "rimraf": "^6.0.1",
     "typescript": "^5"

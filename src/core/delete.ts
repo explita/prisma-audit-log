@@ -2,7 +2,7 @@ import type { AuditLog, HandlerArgs } from "../types.js";
 import { saveAuditLogs } from "./process.js";
 
 export async function handleDelete(opts: HandlerArgs) {
-  const { args, prisma, query, options, modelName } = opts;
+  const { args, prisma, query, options, modelName, internalParams } = opts;
 
   // Get the current state before delete
   const current = await (prisma[modelName] as any).findUnique({
@@ -19,7 +19,7 @@ export async function handleDelete(opts: HandlerArgs) {
       oldData: current,
     };
 
-    await saveAuditLogs(prisma, [auditLog], options);
+    await saveAuditLogs(prisma, [auditLog], options, internalParams);
   }
 
   return result;

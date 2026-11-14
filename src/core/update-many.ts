@@ -3,7 +3,8 @@ import type { AuditLog, HandlerArgs } from "../types.js";
 import { saveAuditLogs } from "./process.js";
 
 export async function handleUpdateMany(opts: HandlerArgs) {
-  const { args, prisma, query, options, modelName, operation } = opts;
+  const { args, prisma, query, options, modelName, operation, internalParams } =
+    opts;
 
   // Get the current state of records that will be updated
   const currentRecords = await (prisma[modelName] as any).findMany({
@@ -57,7 +58,7 @@ export async function handleUpdateMany(opts: HandlerArgs) {
     });
   }
 
-  await saveAuditLogs(prisma, logs, options);
+  await saveAuditLogs(prisma, logs, options, internalParams);
 
   return result;
 }

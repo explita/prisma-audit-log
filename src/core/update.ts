@@ -6,7 +6,15 @@ export async function handleUpdate(
   opts: HandlerArgs,
   action: AuditLog["action"] = "UPDATE"
 ) {
-  const { args, prisma, query, options, modelName, existingRecord } = opts;
+  const {
+    args,
+    prisma,
+    query,
+    options,
+    modelName,
+    existingRecord,
+    internalParams,
+  } = opts;
 
   // Use provided existingRecord or fetch it if not provided
   const current =
@@ -43,6 +51,6 @@ export async function handleUpdate(
     changedFields,
   };
 
-  await saveAuditLogs(prisma, [auditLog], options);
+  await saveAuditLogs(prisma, [auditLog], options, internalParams);
   return result;
 }

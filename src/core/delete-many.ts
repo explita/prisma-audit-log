@@ -2,7 +2,7 @@ import type { AuditLog, HandlerArgs } from "../types.js";
 import { saveAuditLogs } from "./process.js";
 
 export async function handleDeleteMany(opts: HandlerArgs) {
-  const { args, prisma, query, options, modelName } = opts;
+  const { args, prisma, query, options, modelName, internalParams } = opts;
 
   // Get the current state of records that will be deleted
   const currentRecords = await (prisma[modelName] as any).findMany({
@@ -24,7 +24,7 @@ export async function handleDeleteMany(opts: HandlerArgs) {
     oldData: record,
   }));
 
-  await saveAuditLogs(prisma, logs, options);
+  await saveAuditLogs(prisma, logs, options, internalParams);
 
   return result;
 }

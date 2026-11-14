@@ -5,21 +5,45 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-11-14
+
+### Added
+
+- Official support for Prisma 6 and Prisma 7.
+- Automatic detection and binding of Prisma interactive transactions (`$transaction`), ensuring audit logs commit or roll back alongside business operations.
+- Added the `getClient` option to `AuditLogOptions` for explicit transaction client resolution, including integrations using `AsyncLocalStorage`.
+- Added commit-deferred execution for `options.logger` via `deferLoggerUntilCommit` (defaults to `true`), buffering external audit logger calls inside `$transaction` and only firing them after the transaction successfully commits. If the transaction rolls back, buffered logs are safely discarded.
+- Added the `autoDetectTransaction` option to `AuditLogOptions` (defaults to `true`) to enable or disable automatic transaction detection.
+- Added the `propagateErrors` option to `AuditLogOptions` (defaults to `false`) to control whether audit persistence errors are propagated to the calling operation, allowing failed audit writes to trigger transaction rollbacks when enabled.
+
+### Fixed
+
+- Fixed an issue where queries executed inside Prisma interactive transactions (`prisma.$transaction`) performed pre-reads and persisted audit records using the outer client rather than the active transaction client.
+
+### Contributors
+
+- Special thanks to [@trungbui2000](https://github.com/trungbui2000) for filing the issue, providing a clear minimal reproduction, and proposing the `getClient` and error propagation APIs for interactive transactions.
+- Special thanks to [@emzinnia](https://github.com/emzinnia) for opening the PR to add Prisma 6 support.
+
 ## [0.2.3] - 2026-05-07
 
 ### Added
+
 - Added native `BigInt` support to audit log serialization, converting BigInt values to strings to prevent JSON serialization errors.
 
 ### Fixed
+
 - Fixed an issue where default options (like `enabled: true`) were ignored if a partial options object was provided.
 
 ## [0.2.2] - 2026-05-07
 
 ### Added
+
 - Added `enabled` option to `AuditLogOptions` to allow runtime toggling of audit logging (defaults to `true`).
 - Added `sideEffects: false` to `package.json` for better tree-shaking support.
 
 ### Changed
+
 - Standardized `logger` signature in `AuditLogOptions` to exclusively take an array (`AuditLog[]`) for better consistency with batch operations.
 
 ## [0.2.1] - 2025-12-07

@@ -7,6 +7,10 @@ Supports Prisma 6 and Prisma 7.
 ## Features
 
 - ✅ Automatic logging of create, update, and delete operations
+- ✅ Interactive transaction support: logs commit and roll back alongside business writes
+- ✅ Commit-deferred logger: external loggers only receive records when transactions successfully commit
+- ✅ Dynamic client resolution (`getClient`) for `AsyncLocalStorage` and custom transaction stores
+- ✅ Optional error propagation (`propagateErrors`) to ensure data and audit records succeed together
 - ✅ Efficient batch processing of logs with automatic fallback to single inserts
 - ✅ Support for both single and batch operations
 - ✅ Tracks changed fields for updates
@@ -155,27 +159,106 @@ route.put("/test/:id", async (request, reply) => {
 });
 ```
 
+#
+
+### Interactive Transactions (`$transaction`)
+
+Audit logs automatically participate in Prisma interactive transactions. If a transaction rolls back, all audit records, pre-read checks, and external logger calls roll back as well:
+
+```typescript
+await prisma.$transaction(async (tx) => {
+  // Audit log is created inside the transaction
+  await tx.user.create({
+    data: { name: "Alice", email: "alice@example.com" },
+  });
+
+  // If this throws:
+  // 1. The user record is rolled back
+  // 2. The database audit log is rolled back
+  // 3. The custom `logger` callback is NOT called!
+  throw new Error("Business operation failed");
+});
+```
+
+By default (`deferLoggerUntilCommit: true`), any custom `logger` callback is buffered and only fires after the transaction successfully commits. If the transaction rolls back, the buffered logs are safely discarded.
+
+#### Using `AsyncLocalStorage` (`getClient`)
+
+If your application manages transactions via `AsyncLocalStorage` (e.g. in NestJS or custom transaction middleware), you can provide `getClient` to explicitly resolve the active transaction client:
+
+```typescript
+import { AsyncLocalStorage } from "node:async_hooks";
+import { Prisma } from "@prisma/client";
+
+export const txStorage = new AsyncLocalStorage<Prisma.TransactionClient>();
+
+const prisma = new PrismaClient().$extends(
+  auditLogExtension({
+    getClient: () => txStorage.getStore(),
+    propagateErrors: true, // Roll back transaction if audit persistence fails
+  }),
+);
+
+// In your transaction helper:
+export async function runInTransaction<T>(
+  fn: (tx: Prisma.TransactionClient) => Promise<T>,
+): Promise<T> {
+  return prisma.$transaction((tx) => {
+    return txStorage.run(tx, () => fn(tx));
+  });
+}
+```
+
 ## Configuration Options
 
-| Option            | Type                                                                                       | Description                                                                                                      |
-| ----------------- | ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| `includeModels`   | `string[]`                                                                                 | Only log operations on these models                                                                              |
-| `excludeModels`   | `string[]`                                                                                 | Exclude these models from logging                                                                                |
-| `getContext`      | `() => AuditContext`                                                                       | Function to get current context (user, IP, etc.)                                                                 |
-| `maskFields`      | `string[]`                                                                                 | Fields to mask in logs                                                                                           |
-| `maskValue`       | `any`                                                                                      | Value to use for masked fields (default: `[REDACTED]`)                                                           |
-| `maxStringLength` | `number`                                                                                   | Truncate long strings                                                                                            |
-| `maxArrayLength`  | `number`                                                                                   | Truncate large arrays                                                                                            |
-| `enabled`         | `boolean`                                                                                  | Enable or disable audit logging (defaults to `true`)                                                              |
-| `maxPayloadBytes` | `number`                                                                                   | Maximum JSON payload size (before truncation)                                                                    |
-| `fieldFilters`    | `{ [model: string]: { include?: string[]; exclude?: string[] } }`                          | Configure field inclusion/exclusion per model. Use `include` to whitelist fields or `exclude` to blacklist them. |
-| `skip`            | `(params: { model: string; operation: string; args: any }) => boolean \| Promise<boolean>` | Skip logging for specific operations                                                                             |
-| `logger`          | `(log: AuditLog[]) => void \| Promise<void>`                                               | Custom logger function for audit logs                                                                            |
+| Option                  | Type                                                                                       | Description                                                                                                      |
+| ----------------------- | ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| `includeModels`         | `string[]`                                                                                 | Only log operations on these models                                                                              |
+| `excludeModels`         | `string[]`                                                                                 | Exclude these models from logging                                                                                |
+| `getContext`            | `() => AuditContext`                                                                       | Function to get current context (user, IP, etc.)                                                                 |
+| `getClient`             | `(params: { model: string; operation: string; args: any }) => any`                        | Function to resolve active Prisma client (e.g., from `AsyncLocalStorage`)                                        |
+| `autoDetectTransaction` | `boolean`                                                                                  | Automatically detect interactive transactions and bind audit logs (default: `true`)                              |
+| `deferLoggerUntilCommit`| `boolean`                                                                                  | Defer custom logger execution until interactive transactions commit; discards logs on rollback (default: `true`)  |
+| `propagateErrors`       | `boolean`                                                                                  | Rethrow audit errors to abort/rollback surrounding transactions if audit saving fails (default: `false`)         |
+| `maskFields`            | `string[]`                                                                                 | Fields to mask in logs                                                                                           |
+| `maskValue`             | `any`                                                                                      | Value to use for masked fields (default: `[REDACTED]`)                                                           |
+| `maxStringLength`       | `number`                                                                                   | Truncate long strings                                                                                            |
+| `maxArrayLength`        | `number`                                                                                   | Truncate large arrays                                                                                            |
+| `enabled`               | `boolean`                                                                                  | Enable or disable audit logging (defaults to `true`)                                                             |
+| `maxPayloadBytes`       | `number`                                                                                   | Maximum JSON payload size (before truncation)                                                                    |
+| `fieldFilters`          | `{ [model: string]: { include?: string[]; exclude?: string[] } }`                          | Configure field inclusion/exclusion per model. Use `include` to whitelist fields or `exclude` to blacklist them. |
+| `skip`                  | `(params: { model: string; operation: string; args: any }) => boolean \| Promise<boolean>` | Skip logging for specific operations                                                                             |
+| `logger`                | `(log: AuditLog[]) => void \| Promise<void>`                                               | Custom logger function for audit logs                                                                            |
+
+#
+
+## 💖 Support the Mission
+
+Prisma Audit Log is built to provide effortless database transparency and accountability. If it has helped you track critical changes and prevent bugs, please consider supporting the project to ensure its continued growth and maintenance!
+
+<p align="left">
+  <a href="https://github.com/sponsors/explita">
+    <img src="https://img.shields.io/badge/Sponsor_on_GitHub-EA4AAA?style=for-the-badge&logo=github-sponsors&logoColor=white" />
+  </a>
+  <a href="https://ko-fi.com/explita">
+    <img src="https://img.shields.io/badge/Buy_Me_A_Coffee-FF5E5B?style=for-the-badge&logo=ko-fi&logoColor=white" />
+  </a>
+</p>
+
+### 🚀 Ways to Contribute
+
+- **Give us a ⭐**: It helps others discover the project.
+- **Join the Discussion**: Report [bugs](https://github.com/explita/prisma-audit-log/issues) or suggest new [features](https://github.com/explita/prisma-audit-log/discussions).
+- **Spread the Word**: Share your experience with Prisma Audit Log on social media.
+
+### 🙏 Our Amazing Supporters
+
+_A huge thank you to everyone helping us build the future of database transparency!_
+
+[![Contributors](https://contrib.rocks/image?repo=explita/prisma-audit-log)](https://github.com/explita/prisma-audit-log/graphs/contributors)
+
+#
 
 ## License
 
-MIT
-
----
-
-Built with ❤️ by [Explita](https://explita.ng)
+MIT © [Explita](https://github.com/explita)
